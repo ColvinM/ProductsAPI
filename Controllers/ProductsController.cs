@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,25 +14,27 @@ namespace ProductsAPI.Controllers
     [ApiController]
     public class ProductsController : ControllerBase
     {
-        private readonly ProductContext _context;
+        private readonly ApplicationDbContext _context;
 
-        public ProductsController(ProductContext context)
+        public ProductsController(ApplicationDbContext context)
         {
             _context = context;
         }
 
         // GET: api/Products
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetTodoItems()
+        [Authorize(Roles = "User, Manager")]
+        public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
         {
-            return await _context.TodoItems.ToListAsync();
+            return await _context.Products.ToListAsync();
         }
 
         // GET: api/Products/5
         [HttpGet("{id}")]
+        [Authorize(Roles = "User, Manager")]
         public async Task<ActionResult<Product>> GetProduct(long id)
         {
-            var product = await _context.TodoItems.FindAsync(id);
+            var product = await _context.Products.FindAsync(id);
 
             if (product == null)
             {
@@ -44,6 +47,7 @@ namespace ProductsAPI.Controllers
         // PUT: api/Products/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
+        [Authorize(Roles = "Manager")]
         public async Task<IActionResult> PutProduct(long id, Product product)
         {
             if (id != product.Id)
@@ -75,9 +79,10 @@ namespace ProductsAPI.Controllers
         // POST: api/Products
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Authorize(Roles = "Manager")]
         public async Task<ActionResult<Product>> PostProduct(Product product)
         {
-            _context.TodoItems.Add(product);
+            _context.Products.Add(product);
             await _context.SaveChangesAsync();
 
             //return CreatedAtAction("GetProduct", new { id = product.Id }, product);
@@ -85,16 +90,17 @@ namespace ProductsAPI.Controllers
         }
 
         // DELETE: api/Products/5
-        [HttpDelete("{id}")]
+        [HttpDelete]
+        [Authorize(Roles = "Manager")]
         public async Task<IActionResult> DeleteProduct(long id)
         {
-            var product = await _context.TodoItems.FindAsync(id);
+            var product = await _context.Products.FindAsync(id);
             if (product == null)
             {
                 return NotFound();
             }
 
-            _context.TodoItems.Remove(product);
+            _context.Products.Remove(product);
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -102,7 +108,7 @@ namespace ProductsAPI.Controllers
 
         private bool ProductExists(long id)
         {
-            return _context.TodoItems.Any(e => e.Id == id);
+            return _context.Products.Any(e => e.Id == id);
         }
     }
 }
