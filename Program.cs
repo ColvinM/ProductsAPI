@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProductsAPI.Models;
 
@@ -13,7 +14,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(
     options => options.UseInMemoryDatabase("AppDb"));
 builder.Services.AddAuthorization();
 builder.Services.AddIdentityApiEndpoints<IdentityUser>()
-    .AddRoles<IdentityRole>()
+    .AddRoles<IdentityRole>() 
     .AddEntityFrameworkStores<ApplicationDbContext>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -23,11 +24,26 @@ var app = builder.Build();
 // Identity
 app.MapIdentityApi<IdentityUser>();
 
+// Log out endpoint
+app.MapPost("/logout", async (SignInManager<IdentityUser> signInManager,
+    [FromBody] object empty) =>
+{
+    if (empty != null)
+    {
+        await signInManager.SignOutAsync();
+        return Results.Ok();
+    }
+    return Results.Unauthorized();
+})
+//.WithOpenApi() // for minimal Api
+.RequireAuthorization();
+
 // Seed roles
 var scope = app.Services.CreateScope();
 await DataUtility.ManageDataAsync(scope.ServiceProvider);
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline. 
+// Remove if statement for railway
 //if (app.Environment.IsDevelopment())
 //{
     app.UseSwagger();
@@ -37,8 +53,8 @@ await DataUtility.ManageDataAsync(scope.ServiceProvider);
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
-// Identity
 
+// Identity to force login
 //app.MapSwagger().RequireAuthorization();
 
 app.MapControllers();
